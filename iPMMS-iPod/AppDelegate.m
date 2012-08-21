@@ -8,20 +8,35 @@
 
 #import "AppDelegate.h"
 
-#import "ViewController.h"
+#import "signIn.h"
 
 @implementation AppDelegate
 
 @synthesize window = _window;
-@synthesize viewController = _viewController;
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+    /*nav=[[UINavigationController alloc]init];
+    nav.navigationBar.hidden=YES;
+    [self.window addSubview:nav.view];
+    Login *li=[[Login alloc]init];
+    [nav pushViewController:li animated:YES];
+    [self.window makeKeyAndVisible];*/
+
+    nav=[[UINavigationController alloc]init];
+    nav.navigationBar.hidden=YES;
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    //[self.window addSubview:nav.view];
+    signIn *signin=[[signIn alloc]initWithNotificationName:@"loginSuccessful"];
+    [nav pushViewController:signin animated:YES];
+    self.window.rootViewController = nav;
+    [self.window makeKeyAndVisible];
+
+    /*self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     // Override point for customization after application launch.
     self.viewController = [[ViewController alloc] initWithNibName:@"ViewController" bundle:nil];
     self.window.rootViewController = self.viewController;
-    [self.window makeKeyAndVisible];
+    [self.window makeKeyAndVisible];*/
     return YES;
 }
 
@@ -62,6 +77,7 @@
      Save data if appropriate.
      See also applicationDidEnterBackground:.
      */
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 @end
