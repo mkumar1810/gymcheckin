@@ -7,12 +7,15 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "defaults.h"
 
 @class signIn;
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 {
     UINavigationController *nav;
+    METHODCALLBACK _callBackMethod;
+    METHODCALLBACK _reloginCallBack;
 }
 
 @property (strong, nonatomic) UIWindow *window;

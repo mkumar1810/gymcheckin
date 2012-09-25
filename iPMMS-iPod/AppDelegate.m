@@ -27,7 +27,7 @@
     nav.navigationBar.hidden=YES;
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     //[self.window addSubview:nav.view];
-    signIn *signin=[[signIn alloc]initWithNotificationName:@"loginSuccessful"];
+    signIn *signin=[[signIn alloc] init];
     [nav pushViewController:signin animated:YES];
     self.window.rootViewController = nav;
     [self.window makeKeyAndVisible];
@@ -77,7 +77,7 @@
      Save data if appropriate.
      See also applicationDidEnterBackground:.
      */
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    //[[NSNotifixxcationCenter defaultCenter] removeObserver:self];
 }
 
 @end
