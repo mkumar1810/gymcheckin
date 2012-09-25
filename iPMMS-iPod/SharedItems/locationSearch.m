@@ -10,7 +10,8 @@
 
 @implementation locationSearch
 
-- (id)initWithFrame:(CGRect)frame forOrientation:(UIInterfaceOrientation) p_intOrientation andNotification:(NSString*) p_notification withNewDataNotification:(NSString*)  p_proxynotificationname
+- (id)initWithFrame:(CGRect)frame forOrientation:(UIInterfaceOrientation) p_intOrientation andReturnCallback:(METHODCALLBACK) p_cbReturn
+         andIsSplit:(BOOL) p_issplitmode
 {
     self = [super initWithFrame:frame];
     if (self) {
@@ -19,11 +20,9 @@
         [actIndicator setFrame:CGRectMake(140, 202, 37, 37)];
         intOrientation = p_intOrientation;
         _webdataName= [[NSString alloc] initWithFormat:@"%@",@"LOCATIONSLIST"];
-        _proxynotification = [[NSString alloc] initWithFormat:@"%@",p_proxynotificationname];
         _cacheName = [[NSString alloc] initWithString:@"ALLLOCATIONS"];
-        _gobacknotifyName = [[NSString alloc] initWithFormat:@"%@",p_notification];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(locationListDataGenerated:)  name:_proxynotification object:nil];
-        _notificationName = [[NSString alloc] initWithFormat:@"%@",p_notification];
+        //[[NSNotificatxxionCenter defaultCenter] addObserver:self selector:@selector(locationListDataGenerated:)  name:_proxynotification object:nil];
+        _returnMethod = p_cbReturn;
         [actIndicator startAnimating];
         sBar.text = @"";
         sBar.hidden = YES;
@@ -42,7 +41,12 @@
     {
         [actIndicator startAnimating];
         populationOnProgress = YES;
-        gymWSCorecall = [[gymWSProxy alloc] initWithReportType:_webdataName andInputParams:nil andNotificatioName:_proxynotification];
+        __block id myself = self;
+        METHODCALLBACK _wsReturnMethod = ^ (NSDictionary* p_dictInfo)
+        {
+            [myself locationListDataGenerated:p_dictInfo];
+        };  
+        gymWSCorecall = [[gymWSProxy alloc] initWithReportType:_webdataName andInputParams:nil andResponseMethod:_wsReturnMethod];
     }    
 }
 
@@ -51,12 +55,11 @@
     [self generateTableView];
 }
 
-- (void) locationListDataGenerated:(NSNotification *)generatedInfo
+- (void) locationListDataGenerated:(NSDictionary *)generatedInfo
 {
-    NSDictionary *recdData = [generatedInfo userInfo];
     if (dataForDisplay) 
         [dataForDisplay removeAllObjects];
-    dataForDisplay = [[NSMutableArray alloc] initWithArray:[recdData valueForKey:@"data"] copyItems:YES];
+    dataForDisplay = [[NSMutableArray alloc] initWithArray:[generatedInfo valueForKey:@"data"] copyItems:YES];
     //NSLog(@"the received location list %@", dataForDisplay);
     [self setForOrientation:intOrientation];
     populationOnProgress = NO;
@@ -122,7 +125,8 @@
     NSMutableDictionary *returnInfo = [[NSMutableDictionary alloc] init];
     [returnInfo setValue:[NSString stringWithString:@"LocationSelected"] forKey:@"notify"];
     [returnInfo setValue:[dataForDisplay objectAtIndex:indexPath.row] forKey:@"data"];
-    [[NSNotificationCenter defaultCenter] postNotificationName:_notificationName object:self userInfo:returnInfo];
+    //[[NSNotificxxationCenter defaultCenter] postNotificationName:_notificationName object:self userInfo:returnInfo];
+    _returnMethod(returnInfo);
 }
 
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -165,7 +169,7 @@
     
     gymName = [[[NSString alloc] initWithFormat:@" %@",[tmpDict valueForKey:@"GYMNAME"]] stringByReplacingOccurrencesOfString:@" " withString:@"\u00A0"];
     gymAddress = [[[NSString alloc] initWithFormat:@" %@",[tmpDict valueForKey:@"GYMADDRESS"]] stringByReplacingOccurrencesOfString:@" " withString:@"\u00A0"];
-    urlPath = [NSURL URLWithString:[NSString stringWithFormat:@"%@%@//Images//GYM%d.JPG",MAIN_URL, WS_ENV, [[tmpDict valueForKey:@"GYMLOCATIONID"] intValue]]];
+    urlPath = [NSURL URLWithString:[NSString stringWithFormat:@"%@%@//Images//GYM%d.JPG",HO_URL, WS_ENV, [[tmpDict valueForKey:@"GYMLOCATIONID"] intValue]]];
     //NSLog(@"the image location id %@", urlPath);
     locPhoto = (UIImageView*) [cell.contentView viewWithTag:1];
     lblGymName = (UILabel*) [cell.contentView viewWithTag:2];
@@ -215,17 +219,10 @@
 
 - (IBAction) goBack:(id) sender
 {
-        NSMutableDictionary *returnInfo = [[NSMutableDictionary alloc] init];
-        [returnInfo setValue:nil forKey:@"data"];
-        [[NSNotificationCenter defaultCenter] postNotificationName:_notificationName object:self userInfo:returnInfo];
-}
-
-- (void) fireCancelNotification:(NSNotification*) cancelInfo
-{
     NSMutableDictionary *returnInfo = [[NSMutableDictionary alloc] init];
-    [returnInfo setValue:[NSString stringWithString:@"LocationSelectCancel"] forKey:@"notify"];
     [returnInfo setValue:nil forKey:@"data"];
-    [[NSNotificationCenter defaultCenter] postNotificationName:_gobacknotifyName object:self userInfo:returnInfo];
+    //[[NSNotificaxxtionCenter defaultCenter] postNotificationName:_notificationName object:self userInfo:returnInfo];
+    _returnMethod(returnInfo);
 }
 
 @end

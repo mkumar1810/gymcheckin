@@ -13,11 +13,15 @@
 @interface locationSearch : baseSearchForm <UITableViewDataSource, UITableViewDelegate>
 {
     int refreshTag;
-    NSString *_notificationName, *_proxynotification, *_webdataName, *_cacheName,*_gobacknotifyName;
+    NSString /**_notificationName, *_proxynotification,*/ *_webdataName, *_cacheName /*,*_gobacknotifyName*/;
     NSString *currMode;
+    METHODCALLBACK _returnMethod;
 }
 
-- (id)initWithFrame:(CGRect)frame forOrientation:(UIInterfaceOrientation) p_intOrientation andNotification:(NSString*) p_notification withNewDataNotification:(NSString*)  p_proxynotificationname;
-- (void) fireCancelNotification:(NSNotification*) cancelInfo;
+- (id)initWithFrame:(CGRect)frame forOrientation:(UIInterfaceOrientation) p_intOrientation andReturnCallback:(METHODCALLBACK) p_cbReturn
+         andIsSplit:(BOOL) p_issplitmode;
+/*- (id)initWithFrame:(CGRect)frame forOrientation:(UIInterfaceOrientation) p_intOrientation andNotification:(NSString*) p_notification withNewDataNotification:(NSString*)  p_proxynotificationname;*/
+//- (void) fireCancxxelNotification:(NSNotxxification*) cancelInfo;
+- (void) locationListDataGenerated:(NSDictionary *)generatedInfo;
 
 @end

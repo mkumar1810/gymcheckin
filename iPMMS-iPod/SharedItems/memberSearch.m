@@ -10,18 +10,17 @@
 
 @implementation memberSearch
 
-- (id)initWithFrame:(CGRect)frame forOrientation:(UIInterfaceOrientation) p_intOrientation andNotification:(NSString*) p_notification withNewDataNotification:(NSString*)  p_proxynotificationname
+- (id)initWithFrame:(CGRect)frame forOrientation:(UIInterfaceOrientation) p_intOrientation andReturnMethod:(METHODCALLBACK) p_returnMethod andBarCodeScanMethod:(METHODCALLBACK) p_barcodeScan
 {
     self = [super initWithFrame:frame];
     if (self) {
         [super addNIBView:@"getSearch_iPod" forFrame:frame];
+        _msReturnMethod = p_returnMethod;
+        _msBarcodMethod = p_barcodeScan;
         [super setViewBackGroundColor:[UIColor colorWithRed:0.0f green:0.0f blue:89.0/255.0 alpha:1.0]];
         intOrientation = p_intOrientation;
         _webdataName= [[NSString alloc] initWithFormat:@"%@",@"MEMBERSLIST"];
-        _proxynotification = [[NSString alloc] initWithFormat:@"%@",p_proxynotificationname];
         _cacheName = [[NSString alloc] initWithString:@"ALLMEMBERS"];
-        _gobacknotifyName = [[NSString alloc] initWithFormat:@"%@",p_notification];
-        _notificationName = [[NSString alloc] initWithFormat:@"%@",p_notification];
         currMode = [[NSString alloc] initWithFormat:@"%@", @"L"];
         _currControllerIndex = 0;
         [actIndicator startAnimating];
@@ -31,6 +30,11 @@
         navTitle.rightBarButtonItem = logoutBtn;
         sBar.text = @"";
         sBar.delegate = self;
+        NSUserDefaults *stdDefaults = [NSUserDefaults standardUserDefaults];
+        if ([stdDefaults valueForKey:@"LOCATIONSERVER"]) 
+            MAIN_URL = [[NSString alloc] initWithFormat:@"http://%@/", [stdDefaults valueForKey:@"LOCATIONSERVER"]];
+        else
+            MAIN_URL = [[NSString alloc] initWithFormat:@"%@", HO_URL];
         [self generateData];
     }
     return self;
@@ -39,8 +43,7 @@
 - (void) logout : (id) sender
 {
     [self removeFromSuperview];
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"searchMemberReturn" object:nil userInfo:nil];
-    //[[NSNotificationCenter defaultCenter] removeObserver:self name:@"searchMemberReturn" object:nil];
+    _msReturnMethod(nil);
 }
 
 - (void) setBarCodeFromPicker:(NSString*) p_barcode
@@ -52,13 +55,17 @@
 {
     if (populationOnProgress==NO)
     {
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(memberListDataGenerated:)  name:_proxynotification object:nil];
+        __block id myself = self;
+        METHODCALLBACK _wsReturnMethod = ^ (NSDictionary* p_dictInfo)
+        {
+            [myself memberListDataGenerated:p_dictInfo];
+        };  
         populationOnProgress = YES;
         NSMutableDictionary *inputDict = [[NSMutableDictionary alloc] initWithObjectsAndKeys:sBar.text, @"p_searchtext" , nil];
         if (refreshTag==1) 
         {
             [inputDict setValue:[[NSString alloc] initWithString:@""] forKey:@"p_searchtext"];
-            gymWSCorecall = [[gymWSProxy alloc] initWithReportType:_webdataName andInputParams:inputDict andNotificatioName:_proxynotification];
+            gymWSCorecall = [[gymWSProxy alloc] initWithReportType:_webdataName andInputParams:inputDict andResponseMethod:_wsReturnMethod];
         }
         else
         {
@@ -68,17 +75,17 @@
                 if ([stdDefaults valueForKey:_cacheName]==nil) 
                 {
                     [inputDict setValue:[[NSString alloc] initWithString:@""] forKey:@"p_searchtext"];
-                    gymWSCorecall = [[gymWSProxy alloc] initWithReportType:_webdataName andInputParams:inputDict andNotificatioName:_proxynotification];
+                    gymWSCorecall = [[gymWSProxy alloc] initWithReportType:_webdataName andInputParams:inputDict andResponseMethod:_wsReturnMethod];
                 }
                 else
                 {
                     NSMutableDictionary *returnInfo = [[NSMutableDictionary alloc] init];
                     [returnInfo setValue:[stdDefaults valueForKey:_cacheName] forKey:@"data"];
-                    [[NSNotificationCenter defaultCenter] postNotificationName:_proxynotification object:self userInfo:returnInfo];
+                    _wsReturnMethod(returnInfo);
                 }
             }
             else
-                gymWSCorecall = [[gymWSProxy alloc] initWithReportType:_webdataName andInputParams:inputDict andNotificatioName:_proxynotification];
+                gymWSCorecall = [[gymWSProxy alloc] initWithReportType:_webdataName andInputParams:inputDict andResponseMethod:_wsReturnMethod];
         }
         refreshTag = 0;
     }    
@@ -89,12 +96,11 @@
     
 }
 
-- (void) memberListDataGenerated:(NSNotification *)generatedInfo
+- (void) memberListDataGenerated:(NSDictionary *)generatedInfo
 {
-    NSDictionary *recdData = [generatedInfo userInfo];
     if (dataForDisplay) 
         [dataForDisplay removeAllObjects];
-    dataForDisplay = [[NSMutableArray alloc] initWithArray:[recdData valueForKey:@"data"] copyItems:YES];
+    dataForDisplay = [[NSMutableArray alloc] initWithArray:[generatedInfo valueForKey:@"data"] copyItems:YES];
     if ([sBar.text isEqualToString:@""]) 
     {
         NSUserDefaults *stdDefaults = [NSUserDefaults standardUserDefaults];
@@ -106,7 +112,6 @@
     populationOnProgress = NO;
     [actIndicator stopAnimating];
     [self generateTableView];
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void) generateTableView
@@ -161,7 +166,7 @@
 
 - (void) getBarCodeFromCamera : (id) sender
 {
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"getMemberBarCode" object:self userInfo:nil];
+    _msBarcodMethod(nil);
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -183,15 +188,20 @@
 {
     /*NSMutableDictionary *returnInfo = [[NSMutableDictionary alloc] init];
     [returnInfo setValue:[dataForDisplay objectAtIndex:indexPath.row] forKey:@"data"];
-    [[NSNotificationCenter defaultCenter] postNotificationName:_notificationName object:self userInfo:returnInfo];*/
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(memberViewStatusReturn:)  name:@"memberViewStatusReturn" object:nil];
-    memberView *mbrView  = [[memberView alloc] initWithFrame:self.frame withNewDataNotification:@"memberViewData_iPod" andIintDict:[dataForDisplay objectAtIndex:indexPath.row]];
+    [[NSNotificatxxionCenter defaultCenter] postNotificationName:_notificationName object:self userInfo:returnInfo];*/
+    //[[NSNotificatxxionCenter defaultCenter] addObserver:self selector:@selector(memberViewStatusReturn:)  name:@"memberViewStatusReturn" object:nil];
+    METHODCALLBACK _wsReturnMethod = ^ (NSDictionary* p_dictInfo)
+    {
+        [self memberViewStatusReturn:p_dictInfo];
+    };      
+    
+    memberView *mbrView  = [[memberView alloc] initWithFrame:self.frame andIintDict:[dataForDisplay objectAtIndex:indexPath.row] withReturnCallback:_wsReturnMethod];
     [self addSubview:mbrView];
 }
 
-- (void) memberViewStatusReturn:(NSNotification*) p_notifyInfo
+- (void) memberViewStatusReturn:(NSDictionary*) p_notifyInfo
 {
-    NSString *recdRequest = [[p_notifyInfo userInfo] valueForKey:@"data"];    
+    NSString *recdRequest = [p_notifyInfo valueForKey:@"data"];    
     if ([recdRequest isEqualToString:@"Cancel"]) 
     {
         NSLog(@"cancel is received from the view and status update request");
@@ -202,7 +212,6 @@
         NSLog(@"success is received from the view and status update request");
         //[self generateData];
     }
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"memberViewStatusReturn" object:nil];
     
 }
 
@@ -327,7 +336,8 @@
 {
     [super searchBarSearchButtonClicked:searchBar];
     //[actIndicator startAnimating];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(memberListDataGenerated:)  name:_proxynotification object:nil];
+    //[[NSNotificxxationCenter defaultCenter] addObserver:self selector:@selector(memberListDataGenerated:)  name:_proxynotification object:nil];
+    //_msReturnMethod(nil);
     [self generateData];
 }
 
@@ -335,7 +345,8 @@
 {
     NSMutableDictionary *returnInfo = [[NSMutableDictionary alloc] init];
     [returnInfo setValue:nil forKey:@"data"];
-    [[NSNotificationCenter defaultCenter] postNotificationName:_gobacknotifyName object:self userInfo:returnInfo];
+    //[[NSNotificaxxtionCenter defaultCenter] postNotificationName:_gobacknotifyName object:self userInfo:returnInfo];
+    _msReturnMethod(returnInfo);
 }
 
 @end
