@@ -24,5 +24,7 @@
 - (void) setViewResizedForOrientation:(UIInterfaceOrientation) p_intOrientation;
 - (void) generateMembersList;
 - (void) initialize;
+- (void) searchMemberReturn:(NSDictionary *)memberInfo;
+- (void) scanMemberBarcode:(NSDictionary*) notifyInfo;
 
 @end

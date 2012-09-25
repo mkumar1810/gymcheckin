@@ -10,7 +10,7 @@
 
 @implementation memberView
 
-- (id)initWithFrame:(CGRect)frame withNewDataNotification:(NSString*)  p_proxynotificationname andIintDict:(NSDictionary*) p_initDict
+- (id)initWithFrame:(CGRect)frame andIintDict:(NSDictionary*) p_initDict withReturnCallback:(METHODCALLBACK) p_returnCallback
 {
     self = [super initWithFrame:frame];
     if (self) {
@@ -20,7 +20,7 @@
         intOrientation = UIInterfaceOrientationPortrait;
         _initDict = [NSDictionary dictionaryWithDictionary:p_initDict];
         _webdataName= [[NSString alloc] initWithFormat:@"%@",@"MEMBERDATAIPOD"];
-        _proxynotification = [[NSString alloc] initWithFormat:@"%@",p_proxynotificationname];
+        _mvReturnMethod = p_returnCallback;
         [actIndicator startAnimating];
         navTitle.title = @"Member Data";
         navTitle.rightBarButtonItem = nil;
@@ -34,6 +34,12 @@
         [frm setNumberStyle:NSNumberFormatterCurrencyStyle];
         [frm setCurrencySymbol:@""];
         [frm setMaximumFractionDigits:2];
+        stdDefaults = [NSUserDefaults standardUserDefaults];
+        if ([stdDefaults valueForKey:@"LOCATIONSERVER"]) 
+            MAIN_URL = [[NSString alloc] initWithFormat:@"http://%@/", [stdDefaults valueForKey:@"LOCATIONSERVER"]];
+        else
+            MAIN_URL = [[NSString alloc] initWithFormat:@"%@", HO_URL];
+        NSLog(@"the main url is %@", MAIN_URL);
         [self generateData];
     }
     return self;
@@ -44,8 +50,11 @@
     if (populationOnProgress==NO)
     {
         populationOnProgress = YES;
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(memberViewDataGenerated:)  name:_proxynotification object:nil];
-        gymWSCorecall = [[gymWSProxy alloc] initWithReportType:_webdataName andInputParams:_initDict andNotificatioName:_proxynotification];
+        METHODCALLBACK _wsReturnMethod = ^ (NSDictionary* p_dictInfo)
+        {
+            [self memberViewDataGenerated:p_dictInfo];
+        };   
+        gymWSCorecall = [[gymWSProxy alloc] initWithReportType:_webdataName andInputParams:_initDict andResponseMethod:_wsReturnMethod];
     }    
 }
 
@@ -54,14 +63,13 @@
     
 }
 
-- (void) memberViewDataGenerated:(NSNotification *)generatedInfo
+- (void) memberViewDataGenerated:(NSDictionary *)generatedInfo
 {
     UIBarButtonItem *btnCheckStatus;
     int isCheckedOut = 0;
-    NSDictionary *recdData = [generatedInfo userInfo];
     if (dataForDisplay) 
         [dataForDisplay removeAllObjects];
-    dataForDisplay = [[NSMutableArray alloc] initWithArray:[recdData valueForKey:@"data"] copyItems:YES];
+    dataForDisplay = [[NSMutableArray alloc] initWithArray:[generatedInfo valueForKey:@"data"] copyItems:YES];
     _dispDict = [NSDictionary dictionaryWithDictionary:[dataForDisplay objectAtIndex:0]];
     isCheckedOut = [[_dispDict valueForKey:@"ISCHECKEDOUT"] intValue];
     if (isCheckedOut) 
@@ -72,7 +80,7 @@
     navTitle.rightBarButtonItem = btnCheckStatus;
     
     populationOnProgress = NO;
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:_proxynotification object:nil];
+    //[[NSNotifixxcationCenter defaultCenter] removeObserver:self name:_proxynotification object:nil];
     [self generateTableView];
 }
 
@@ -181,7 +189,7 @@
 {
     /*NSMutableDictionary *returnInfo = [[NSMutableDictionary alloc] init];
     [returnInfo setValue:[dataForDisplay objectAtIndex:indexPath.row] forKey:@"data"];
-    [[NSNotificationCenter defaultCenter] postNotificationName:_notificationName object:self userInfo:returnInfo];*/
+    [[NSNotificaxxtionCenter defaultCenter] postNotificationName:_notificationName object:self userInfo:returnInfo];*/
 }
 
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -254,7 +262,7 @@
 {
     /*NSMutableDictionary *returnInfo = [[NSMutableDictionary alloc] init];
     [returnInfo setValue:nil forKey:@"data"];
-    [[NSNotificationCenter defaultCenter] postNotificationName:_gobacknotifyName object:self userInfo:returnInfo];*/
+    [[NSNotificaxxxtionCenter defaultCenter] postNotificationName:_gobacknotifyName object:self userInfo:returnInfo];*/
 }
 
 - (UITableViewCell*) getCellForFirstRowWithPicture
@@ -473,19 +481,22 @@
     if ([btnClicked.title isEqualToString:@"Member"]) 
     {
         [self removeFromSuperview];
-        [[NSNotificationCenter defaultCenter] removeObserver:self];
         return;
     }
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(memberStatusUpdated:)  name:@"memberStatusUpdated" object:nil];
-    memberStatusChange *mbrCheck = [[memberStatusChange alloc] initWithFrame:self.frame withNewDataNotification:@"memberCheckNotesData_iPod" andIintDict:_dispDict];
+    METHODCALLBACK _mbrStatusUpdateMethod  = ^ (NSDictionary* p_dictInfo)
+    {
+        [self memberStatusUpdated:p_dictInfo];
+    };   
+    
+    memberStatusChange *mbrCheck = [[memberStatusChange alloc] initWithFrame:self.frame andIintDict:_dispDict withStatusUpdateMethod:_mbrStatusUpdateMethod];
     [self addSubview:mbrCheck];
     
 }
 
-- (void) memberStatusUpdated:(NSNotification*) p_notifyInfo
+- (void) memberStatusUpdated:(NSDictionary*) p_notifyInfo
 {
-    NSString *recdRequest = [[p_notifyInfo userInfo] valueForKey:@"data"];    
+    NSString *recdRequest = [p_notifyInfo valueForKey:@"data"];    
     if ([recdRequest isEqualToString:@"Cancel"]) 
     {
         //NSLog(@"cancel is received from the status update request");
@@ -494,10 +505,9 @@
     if ([recdRequest isEqualToString:@"Success"]) 
     {
         NSDictionary *returnInfo = [[NSDictionary alloc] initWithObjectsAndKeys:@"Success",@"data", nil];
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"memberViewStatusReturn" object:nil userInfo:returnInfo];
+        _mvReturnMethod(returnInfo);
         [self removeFromSuperview];
     }
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"memberStatusUpdated" object:nil];
 }
 
 @end

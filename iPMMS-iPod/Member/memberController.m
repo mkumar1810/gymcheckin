@@ -10,7 +10,6 @@
 
 @implementation memberController
 
-
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
 {
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
@@ -42,9 +41,7 @@
 
 - (void) initialize
 {
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(searchMemberReturn:) name:@"searchMemberReturn" object:nil];   
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(scanMemberBarcode:) name:@"getMemberBarCode" object:nil];   
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(navigateToMember:) name:@"navigateToMember" object:nil];   
+    //[[NSNotificaxxxtionCenter defaultCenter] addObserver:self selector:@selector(searchMemberReturn:) name:@"searchMemberReturn" object:nil];   
     if (UIInterfaceOrientationIsPortrait(self.interfaceOrientation)==YES) 
         currOrientation = UIInterfaceOrientationPortrait;
     else
@@ -87,17 +84,22 @@
     myFrame = self.view.frame;
     myFrame.origin.y = 0;
     myFrame.origin.x = 0;
-    memSearch = [[memberSearch alloc] initWithFrame:myFrame forOrientation:currOrientation  andNotification:@"searchMemberReturn" withNewDataNotification:@"memSearchGenerated_Main"];
+    METHODCALLBACK _mbrSearchReturn = ^ (NSDictionary* p_dictInfo)
+    {
+        [self searchMemberReturn:p_dictInfo];
+    };
+    METHODCALLBACK _mbrBarCodeScan = ^ (NSDictionary* p_dictInfo)
+    {
+        [self scanMemberBarcode:p_dictInfo];
+    };
+    
+    memSearch = [[memberSearch alloc] initWithFrame:myFrame forOrientation:currOrientation  andReturnMethod:_mbrSearchReturn andBarCodeScanMethod:_mbrBarCodeScan];
     [self.view addSubview:memSearch];
 }
 
-- (void) searchMemberReturn:(NSNotification *)memberInfo
+- (void) searchMemberReturn:(NSDictionary *)memberInfo
 {
-
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"navigateToMember" object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"getMemberBarCode" object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"searchMemberReturn" object:nil];
-    signIn *resignIn = [[signIn alloc] initWithNotificationName:@"loginSuccessful"];
+    signIn *resignIn = [[signIn alloc] init];
     [self.navigationController pushViewController:resignIn animated:NO];
 }
 
@@ -114,7 +116,7 @@
     }
 }
 
-- (void) scanMemberBarcode:(NSNotification*) notifyInfo
+- (void) scanMemberBarcode:(NSDictionary*) notifyInfo
 {
     ZBarReaderViewController *reader = [ZBarReaderViewController new];
     reader.readerDelegate = self;
@@ -159,13 +161,5 @@
     [self dismissModalViewControllerAnimated:YES];
 }
 
-- (void) navigateToMember:(NSNotification*) notifyInfo
-{
-    //[mbrView removeFromSuperview];
-    
-    /*memberController *memController = [[memberController alloc] initWithNibName:@"memberController" bundle:nil];
-    [self.navigationController pushViewController:memController animated:NO];   
-    [[NSNotificationCenter defaultCenter] removeObserver:self];*/
-}
 
 @end
