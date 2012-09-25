@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "login.h"
 #import "locationSearch.h"
-
+#import "defaults.h"
 
 @interface signIn : UIViewController 
 {
@@ -20,7 +20,9 @@
     NSUserDefaults *standardUserDefaults;
 }
 
-- (id) initWithNotificationName:(NSString*) p_notifyName;
+//- (id) initWithNotificationName:(NSString*) p_notifyName;
 - (void) showAlertMessage:(NSString *) dispMessage;
+- (void) loginSuccessful : (NSDictionary*) signInfo;
+- (void) locationNotifyLogin : (NSDictionary*) locInfo;
 
 @end

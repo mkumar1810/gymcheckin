@@ -12,10 +12,10 @@
 
 static bool shouldScroll = true;
 
-- (id) initWithFrame:(CGRect)frame andNotificationName:(NSString*) p_notifyName withOrientation:(UIInterfaceOrientation) p_intOrientation
+- (id) initWithFrame:(CGRect)frame andNotificationMethod:(METHODCALLBACK) p_notifyMethod withOrientation:(UIInterfaceOrientation) p_intOrientation
 {
     self = [self initWithFrame:frame];
-    _notificationName = [[NSString alloc] initWithString:p_notifyName];
+    _postLoginResult = p_notifyMethod;
     intOrientationType = p_intOrientation;
     self.backgroundColor = [UIColor blackColor];
     //[Email setFrame:CGRectMake(Email.frame.origin.x, Email.frame.origin.y, Email.frame.size.width, 54)];
@@ -38,7 +38,6 @@ static bool shouldScroll = true;
     Email.text= @"ed";
     Password.text = @"1234";
     actview.hidesWhenStopped = TRUE;
-    _notificationName = [[NSString alloc] initWithString:@"loginSuccessful"];
     actview.transform = CGAffineTransformMakeScale(5.00, 5.00);        
     return self;
 }
@@ -80,7 +79,7 @@ static bool shouldScroll = true;
 {
     [actview startAnimating];
     NSDictionary *inputDict = [[NSDictionary alloc] initWithObjectsAndKeys:[[NSString alloc] initWithFormat:@"%@",Email.text], @"p_eMail",[[NSString alloc] initWithFormat:@"%@",Password.text], @"p_passWord" , nil];
-    _wsProxy = [[gymWSProxy alloc] initWithReportType:@"USERLOGIN" andInputParams:inputDict andNotificatioName:_notificationName];
+    _wsProxy = [[gymWSProxy alloc] initWithReportType:@"USERLOGIN" andInputParams:inputDict andResponseMethod:_postLoginResult];
 }
 
 - (void) showAlertMessage:(NSString *) dispMessage

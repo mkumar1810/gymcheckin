@@ -12,15 +12,10 @@
 
 @implementation signIn
 
-- (id) initWithNotificationName:(NSString*) p_notifyName
+- (id) init   //WithNotificationName:(NSString*) p_notifyName
 {
     self = [super initWithNibName:@"signIn_iPod" bundle:nil];
     if (self) {
-        _notificationName = [[NSString alloc] initWithFormat:@"%@", p_notifyName];
-        if ([p_notifyName isEqualToString:@"loginSuccessful"]==YES) 
-            [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(loginSuccessful:) name:@"loginSuccessful" object:nil];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(locationNotifyLogin:) name:@"locationNotifyLogin" object:nil];
-        // Custom initialization
     }
     return  self;
 }
@@ -42,7 +37,11 @@
     CGRect myframe = [self.view bounds];
     currOrientation = self.interfaceOrientation;
     //signLogin = [[login alloc] initWithFrame:myframe andNotificationName:p_notifyName withOrient
-    signLogin = [[login alloc] initWithFrame:myframe andNotificationName:_notificationName withOrientation:currOrientation];
+    METHODCALLBACK loginReturn = ^ (NSDictionary* p_dictInfo)
+    {
+        [self loginSuccessful:p_dictInfo];
+    };
+    signLogin = [[login alloc] initWithFrame:myframe andNotificationMethod:loginReturn withOrientation:currOrientation];
     signLogin.tag = 1001;
     [self.view addSubview:signLogin];
     [super viewDidLoad];
@@ -52,7 +51,6 @@
 
 - (void)viewDidUnload
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
     [super viewDidUnload];
     // Release any retained subviews of the main view.
     // e.g. self.myOutlet = nil;
@@ -71,9 +69,9 @@
     [signLogin setForOrientation:toInterfaceOrientation];
 }
 
-- (void) loginSuccessful : (NSNotification*) signInfo
+- (void) loginSuccessful : (NSDictionary*) signInfo
 {
-    NSDictionary *returnedDict =  [[[signInfo userInfo] valueForKey:@"data"] objectAtIndex:0];
+    NSDictionary *returnedDict =  [[signInfo valueForKey:@"data"] objectAtIndex:0];
     NSString *respCode = [returnedDict valueForKey:@"RESPONSECODE"];
     NSString *respMsg = [returnedDict valueForKey:@"RESPONSEMESSAGE"];
     if ([respCode isEqualToString:@"0"]) {
@@ -82,21 +80,24 @@
         [standardUserDefaults setObject:[loginuser uppercaseString] forKey:@"USERCODE"];    
         [standardUserDefaults setObject:[shortName uppercaseString] forKey:@"SHORTNAME"];
         [[self.view viewWithTag:1001] removeFromSuperview];
-        //[[NSNotificationCenter defaultCenter] postNotificationName:@"loginSucceeded" object:nil];
-        locSearch = [[locationSearch alloc] initWithFrame:self.view.frame forOrientation:currOrientation andNotification:@"locationNotifyLogin" withNewDataNotification:@"locationDataGenerated_login"];
+        METHODCALLBACK loginReturn = ^ (NSDictionary* p_dictInfo)
+        {
+            [self locationNotifyLogin:p_dictInfo];
+        };
+        locSearch = [[locationSearch alloc] initWithFrame:self.view.frame forOrientation:currOrientation andReturnCallback:loginReturn andIsSplit:NO];
         [self.view addSubview:locSearch];
     }
     else
         [self showAlertMessage:respMsg];
 }
 
-- (void) locationNotifyLogin : (NSNotification*) locInfo
+- (void) locationNotifyLogin : (NSDictionary*) locInfo
 {
-    NSDictionary *recdData = [[locInfo userInfo] valueForKey:@"data"];
+    NSDictionary *recdData = [locInfo valueForKey:@"data"];
     if (recdData) 
     {
         [standardUserDefaults setValue:[recdData valueForKey:@"GYMLOCATIONID"] forKey:@"LOGGEDLOCATION"];
-        //[[NSNotificationCenter defaultCenter] postNotificationName:@"loginSucceeded" object:nil];
+        [standardUserDefaults setValue:[recdData valueForKey:@"IPADDRESS"] forKey:@"LOCATIONSERVER"];
         [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(locIsSelected:) userInfo:nil repeats:NO];
         return;
     }

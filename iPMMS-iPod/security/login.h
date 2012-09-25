@@ -24,13 +24,14 @@
     IBOutlet UIScrollView *scrollView;
     IBOutlet UIButton *btnLogin;
     UIInterfaceOrientation intOrientationType;
-    NSString *_notificationName;
+    //NSString *_notificationName;
     gymWSProxy *_wsProxy;
+    METHODCALLBACK _postLoginResult;    
 }
 - (IBAction)Login;
 - (BOOL) validate;
 - (void) showAlertMessage:(NSString *) dispMessage;
 - (void) setForOrientation:(UIInterfaceOrientation) orientationType;
-- (id) initWithFrame:(CGRect)frame andNotificationName:(NSString*) p_notifyName withOrientation:(UIInterfaceOrientation) p_intOrientation;
+- (id) initWithFrame:(CGRect)frame andNotificationMethod:(METHODCALLBACK) p_notifyMethod withOrientation:(UIInterfaceOrientation) p_intOrientation;
 - (void) resetValues;
 @end
