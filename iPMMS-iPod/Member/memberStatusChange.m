@@ -10,7 +10,7 @@
 
 @implementation memberStatusChange
 
-- (id)initWithFrame:(CGRect)frame withNewDataNotification:(NSString*)  p_proxynotificationname andIintDict:(NSDictionary*) p_initDict
+- (id)initWithFrame:(CGRect)frame andIintDict:(NSDictionary*) p_initDict withStatusUpdateMethod:(METHODCALLBACK) p_statusUpdateMethod
 {
     self = [super initWithFrame:frame];
     if (self) {
@@ -20,7 +20,8 @@
         intOrientation = UIInterfaceOrientationPortrait;
         _initDict = [NSDictionary dictionaryWithDictionary:p_initDict];
         _webdataName= [[NSString alloc] initWithFormat:@"%@",@"MEMBERNOTESFORSTATUSCHANGE"];
-        _proxynotification = [[NSString alloc] initWithFormat:@"%@",p_proxynotificationname];
+        _mbrStatusUpdateMethod = p_statusUpdateMethod;
+        //_proxynotification = [[NSString alloc] initWithFormat:@"%@",p_proxynotificationname];
         [actIndicator startAnimating];
         navTitle.title = @"Member Data";
         isCheckedOut = [[_initDict valueForKey:@"ISCHECKEDOUT"] intValue];
@@ -48,10 +49,13 @@
 {
     if (populationOnProgress==NO)
     {
+        METHODCALLBACK _mbrDataGenerateMethod  = ^ (NSDictionary* p_dictInfo)
+        {
+            [self memberCheckNotesDataGenerated:p_dictInfo];
+        };           
         [actIndicator startAnimating];
         populationOnProgress = YES;
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(memberCheckNotesDataGenerated:)  name:_proxynotification object:nil];
-        gymWSCorecall = [[gymWSProxy alloc] initWithReportType:_webdataName andInputParams:_initDict andNotificatioName:_proxynotification];
+        gymWSCorecall = [[gymWSProxy alloc] initWithReportType:_webdataName andInputParams:_initDict andResponseMethod:_mbrDataGenerateMethod];
     }    
 }
 
@@ -60,24 +64,21 @@
     
 }
 
-- (void) memberCheckNotesDataGenerated:(NSNotification *)generatedInfo
+- (void) memberCheckNotesDataGenerated:(NSDictionary *)generatedInfo
 {
-    NSDictionary *recdData = [generatedInfo userInfo];
     if (dataForDisplay) 
         [dataForDisplay removeAllObjects];
-    dataForDisplay = [[NSMutableArray alloc] initWithArray:[recdData valueForKey:@"data"] copyItems:YES];
+    dataForDisplay = [[NSMutableArray alloc] initWithArray:[generatedInfo valueForKey:@"data"] copyItems:YES];
     //_dispDict = [NSDictionary dictionaryWithDictionary:[dataForDisplay objectAtIndex:0]];
     
     populationOnProgress = NO;
     [actIndicator stopAnimating];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:_proxynotification object:nil];
     [self generateTableView];
 }
 
-- (void) memberCheckNotesStatusUpdated:(NSNotification *)generatedInfo
+- (void) memberCheckNotesStatusUpdated:(NSDictionary *)generatedInfo
 {
-    NSDictionary *returnedDict =  [[[generatedInfo userInfo] valueForKey:@"data"] objectAtIndex:0];
-    NSLog(@"the received dictionary %@",returnedDict);
+    NSDictionary *returnedDict =  [[generatedInfo valueForKey:@"data"] objectAtIndex:0];
     NSString *respCode = [returnedDict valueForKey:@"RESPONSECODE"];
     NSString *respMsg = [returnedDict valueForKey:@"RESPONSEMESSAGE"];
     [actIndicator stopAnimating];
@@ -85,11 +86,11 @@
     {
         [self removeFromSuperview];
         NSDictionary *returnInfo = [[NSDictionary alloc] initWithObjectsAndKeys:@"Success",@"data", nil];
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"memberStatusUpdated" object:nil userInfo:returnInfo];
+        //[[NSNotificxxationCenter defaultCenter] postNotificationName:@"memberStatusUpdated" object:nil userInfo:returnInfo];
+        _mbrStatusUpdateMethod(returnInfo);
     }
     else    
         [self showAlertMessage:respMsg];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"memberCheckNotesStatusUpdated" object:nil];
 }
 
 - (void) showAlertMessage:(NSString *) dispMessage
@@ -195,7 +196,7 @@
 {
     /*NSMutableDictionary *returnInfo = [[NSMutableDictionary alloc] init];
      [returnInfo setValue:[dataForDisplay objectAtIndex:indexPath.row] forKey:@"data"];
-     [[NSNotificationCenter defaultCenter] postNotificationName:_notificationName object:self userInfo:returnInfo];*/
+     [[NSNotificxxationCenter defaultCenter] postNotificationName:_notificationName object:self userInfo:returnInfo];*/
 }
 
 -(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -416,7 +417,7 @@
 {
     /*NSMutableDictionary *returnInfo = [[NSMutableDictionary alloc] init];
      [returnInfo setValue:nil forKey:@"data"];
-     [[NSNotificationCenter defaultCenter] postNotificationName:_gobacknotifyName object:self userInfo:returnInfo];*/
+     [[NSNotificatxxionCenter defaultCenter] postNotificationName:_gobacknotifyName object:self userInfo:returnInfo];*/
 }
 
 
@@ -547,22 +548,26 @@
     if ([btnClicked.title isEqualToString:@"Cancel"]) 
     {
         NSDictionary *returnInfo = [[NSDictionary alloc] initWithObjectsAndKeys:@"Cancel",@"data", nil];
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"memberStatusUpdated" object:nil userInfo:returnInfo];
+        _mbrStatusUpdateMethod(returnInfo);
         [self removeFromSuperview];
     }
     if ([btnClicked.title isEqualToString:@"Confirm"]) 
     {
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(memberCheckNotesStatusUpdated:) name:@"memberCheckNotesStatusUpdated" object:nil];
+        METHODCALLBACK _mbrCheckNotesStatusUpdate = ^ (NSDictionary* p_dictInfo)
+        {
+            [self memberCheckNotesStatusUpdated:p_dictInfo];
+        };           
+        //[[NSNotificatixxonCenter defaultCenter] addObserver:self selector:@selector(memberCheckNotesStatusUpdated:) name:@"memberCheckNotesStatusUpdated" object:nil];
         [actIndicator startAnimating];
         if (isCheckedOut) 
         {
             NSDictionary *updateInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[_initDict valueForKey:@"MEMBERID"] ,@"p_memberid" ,[NSString stringWithFormat:@"%d", scCheckinType.selectedSegmentIndex], @"p_checkintype"  , nil];
-            gymWSCorecall = [[gymWSProxy alloc] initWithReportType:@"ADDCHECKIN" andInputParams:updateInfo andNotificatioName:@"memberCheckNotesStatusUpdated"];
+            gymWSCorecall = [[gymWSProxy alloc] initWithReportType:@"ADDCHECKIN" andInputParams:updateInfo andResponseMethod:_mbrCheckNotesStatusUpdate];
         }
         else
         {
             NSDictionary *updateInfo = [[NSDictionary alloc] initWithObjectsAndKeys:[_initDict valueForKey:@"LASTVISITENTRYID"] ,@"p_checkinid", nil];
-            gymWSCorecall = [[gymWSProxy alloc] initWithReportType:@"UPDATECHECKOUT" andInputParams:updateInfo andNotificatioName:@"memberCheckNotesStatusUpdated"];
+            gymWSCorecall = [[gymWSProxy alloc] initWithReportType:@"UPDATECHECKOUT" andInputParams:updateInfo andResponseMethod:_mbrCheckNotesStatusUpdate];
         }
     }
 }
