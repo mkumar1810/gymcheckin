@@ -109,12 +109,10 @@
 - (IBAction) goBack:(id) sender
 {
     [self removeFromSuperview];
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)dealloc
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];   
 }
 
 

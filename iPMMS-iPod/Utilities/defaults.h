@@ -8,8 +8,8 @@
 
 #import <Foundation/Foundation.h>
 
-#define MAIN_URL @"http://194.170.6.30/"
-//#define MAIN_URL @"http://192.168.1.4/"
+#define HO_URL @"http://192.168.1.8/"
+//#define HO_URL @"http://194.170.6.30/"
 #define WS_ENV @"GYMWS"
 #define NO_OF_DAYS_FOR_LINECHART 120
 #define M_PI        3.14159265358979323846264338327950288   /* pi */
@@ -29,6 +29,8 @@
 #define MEMBERNOTESFORSTATUS_URL @"/memberservice_ipod.asmx?op=GymMemberNotes_ipod"
 #define MEMBERADDCHECKIN_URL @"/memberservice_ipod.asmx?op=gymCreateCheckIn_ipod"
 #define MEMBERUPDATECHECKOUT_URL @"/memberservice_ipod.asmx?op=gymUpdateCheckOut_ipod"
+
+typedef void (^METHODCALLBACK) (NSDictionary*);
 
 @protocol defaults <NSObject>
 

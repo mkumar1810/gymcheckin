@@ -10,6 +10,26 @@
 
 @implementation gymWSProxy
 
+- (id) initWithReportType:(NSString*) resultType andInputParams:(NSDictionary*) prmDict andResponseMethod:(METHODCALLBACK) p_methodCallback
+{
+    self = [super init];
+    if (self) {
+        _resultType = [[NSString alloc] initWithFormat:@"%@", resultType];
+        _postProxyResult = p_methodCallback;
+        if (prmDict) 
+            inputParms = [[NSDictionary alloc] initWithDictionary:prmDict];
+        dictData = [[NSMutableArray alloc] init];
+        _returnInputsAlso = NO;
+        NSUserDefaults *stdDefaults = [NSUserDefaults standardUserDefaults];
+        if ([stdDefaults valueForKey:@"LOCATIONSERVER"]) 
+            MAIN_URL = [[NSString alloc] initWithFormat:@"%@", HO_URL]; // [[NSString alloc] initWithFormat:@"http://%@/", [stdDefaults valueForKey:@"LOCATIONSERVER"]];
+        else
+            MAIN_URL = [[NSString alloc] initWithFormat:@"%@", HO_URL];
+        [self generateData];
+    }
+    return self;    
+}
+
 - (id) initWithReportType:(NSString*) resultType andInputParams:(NSDictionary*) prmDict andNotificatioName:(NSString*) notificationName;
 {
     self = [super init];
@@ -241,7 +261,7 @@
     NSMutableDictionary *returnInfo = [[NSMutableDictionary alloc] init];
     [returnInfo setValue:dictData forKey:@"data"];
     //NSLog(@"the returned notification is %@ and return info is %@", _notificationName, returnInfo);
-    [[NSNotificationCenter defaultCenter] postNotificationName:_notificationName object:self userInfo:returnInfo];
+    _postProxyResult(returnInfo);
 }
 
 -(NSString *)htmlEntityDecode:(NSString *)string
